@@ -21,7 +21,7 @@ export default function TaskCard({ name, contentList, onDelete, onAdd }: Props) 
   return (
     <div className="w-96 bg-[#f0f0a3] border rounded-lg overflow-hidden shadow-lg">
       <div className="relative flex w-full h-16 bg-[#ffff54] rounded-t-lg border-b border-gray-300 justify-between items-center px-4">
-        <h1 className="font-bold truncate max-w-[85%]" name={name}>
+        <h1 className="font-bold truncate max-w-[85%]" >
           {name?.length > 32 ? name.substring(0, 29) + "..." : name}
         </h1>
         <div className="flex flex-row gap-4">
@@ -52,7 +52,7 @@ export default function TaskCard({ name, contentList, onDelete, onAdd }: Props) 
                 key={index}
                 className="grid grid-cols-3 gap-4 py-2 border-b border-gray-300"
               >
-                <p className="truncate" name={content.name}>
+                <p className="truncate">
                   {content?.name.length > 32
                     ? content?.name.substring(0, 29) + "..."
                     : content?.name}
