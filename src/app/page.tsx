@@ -1,101 +1,529 @@
-import Image from "next/image";
+"use client";
+import TaskCard from "@/components/TaskCard";
+import { Plus, CircleX } from "lucide-react";
+import { useState, useEffect } from "react";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import FormModal from "@/components/FormModal";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import {
+  incrementPoints,
+  decrementPoints,
+  setPointsBalance,
+} from "@/store/pointsSlice";
+import axiosInstance from "@/lib/client/api/axiosInstance";
+import { useRouter } from "next/navigation";
+
+
+type SubTask = {
+  name: string;
+  difficulty: "easy" | "medium" | "hard";
+  points: number;
+};
+
+type Tasks = {
+  _id?: string,
+  name: string;
+  contentList: SubTask[];
+};
+
+const EASY_POINTS = 10;
+const MEDIUM_POINTS = 50;
+const HARD_POINTS = 100;
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const dummyStrings = ["Two sum", "Four sum"];
+  const router = useRouter();
+  const [openAddTaskModal, setOpenFormModal] = useState(false);
+  const [openAddSubTaskModal, setOpenSubTaskModal] = useState(false);
+  const [rewardScreen, setRewardScreen] = useState(false);
+  const [tasks, setTasks] = useState<Tasks[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [name, setName] = useState<string>("");
+  const [contentList, setContentList] = useState<SubTask[]>([]);
+  const [currentTaskIndex, setCurrentTaskIndex] = useState<number>(0);
+  const [deleteTaskConfirmation, setDeleteTaskConfimration] =
+    useState<boolean>(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const points = useAppSelector((state)=> state.points.pointsBalance)
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+      const fetchTasks = async () => {
+        try {
+          const res = await axiosInstance.get("/api/tasks/get-tasks");
+          const data = await res.data.tasks;
+           const mappedTasks: Tasks[] = data.map((task: any) => ({
+            _id: task._id,
+             name: task.name || "",
+             contentList: task.subTasks || [],
+           }));
+           setTasks(mappedTasks || []);
+        } catch (err) {
+          console.error("Failed to fetch tasks:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      fetchTasks()
+  }, []);
+   
+
+  const handlePointsBalance = () => {
+    let sum = 0;
+    tasks.forEach((task, index) => {
+      sum += task?.contentList?.reduce(
+        (acc, subTask) => acc + subTask.points,
+        0
+      );
+    });
+    dispatch(setPointsBalance(sum))
+  };
+
+  const handleTaskAdd = () => {
+    setOpenFormModal(true);
+  };
+
+  const handleDeleteTask = async (index: number) => {
+    console.log(tasks)
+    const taskId = tasks[index]?._id;
+
+    if (!taskId) {
+      console.error("Task ID not found for deletion");
+      return;
+    }
+
+    try {
+      const res = await axiosInstance.delete(`/api/tasks/delete-task/${taskId}`);
+
+      if (res.data.success) {
+        const currentTasks = tasks.filter((_, i) => i !== index);
+        setTasks(currentTasks);
+      } else {
+        console.error("Failed to delete task:", res.data.error);
+      }
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
+  };
+
+    const handleAddTaskSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+
+      const payload = {
+        name,
+        subTasks: contentList,
+      };
+
+      try {
+        const res = await axiosInstance.post("/api/tasks/add-task", payload);
+
+        if (res.data.success) {
+          const newTask = res.data.task;
+          console.log(newTask)
+          const newSubTasks = res.data.task?.subTasks
+          let subTaskSum = 0
+          if (newSubTasks) {
+            newSubTasks.forEach((subTask: any)=>{
+              subTaskSum += subTask?.points
+            })
+          }
+          dispatch(incrementPoints(subTaskSum))
+
+          setTasks((prevTasks) => [
+            ...prevTasks,
+            {
+              _id: newTask._id,
+              name: newTask.name,
+              contentList: newTask.subTasks,
+            },
+          ]);
+
+        } else {
+          console.error("Error adding task:", res.data.error);
+        }
+      } catch (err) {
+        console.error("Failed to add task:", err);
+      } finally {
+        setOpenFormModal(false);
+        setName("");
+        setContentList([]);
+      }
+    };
+
+    const handleAddTaskClose = () => {
+      setOpenFormModal(false);
+      setName("");
+      setContentList([]);
+    };
+
+
+  const handleSubTaskAdd = () => {
+    setContentList([
+      ...contentList,
+      { name: "", difficulty: "easy", points: 10 },
+    ]);
+
+  };
+
+  
+  const handleAddSubTaskSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const taskToUpdate = tasks[currentTaskIndex];
+    const totalPoints = contentList.reduce((acc, sub) => acc + sub.points, 0);
+    console.log(taskToUpdate)
+    const payload = {
+      _id: taskToUpdate._id, 
+      subTasks: contentList,
+      totalPoints,
+    };
+
+    try {
+      const res = await axiosInstance.post("/api/tasks/update-task", payload);
+
+      if (res.data.success) {
+        const updatedTask = res.data.task;
+        const oldTotal = tasks[currentTaskIndex]?.contentList?.reduce(
+          (acc, subTask) => subTask?.points + acc,
+          0
+        );
+
+        const newTotal = updatedTask?.subTasks?.reduce(
+          (acc:any, subTask:any) => subTask?.points + acc,
+          0
+        );
+        console.log(oldTotal)
+        console.log(newTotal)
+        if(newTotal>oldTotal){
+          dispatch(incrementPoints(newTotal-oldTotal));
+        }
+        
+
+        
+        setTasks((prevTasks) =>
+          prevTasks.map((task, index) =>
+            index === currentTaskIndex
+              ? {
+                  _id: updatedTask._id,
+                  name: updatedTask.name,
+                  contentList: updatedTask.subTasks,
+                }
+              : task
+          )
+        );
+
+
+
+      } else {
+        console.error("Update error:", res.data.error);
+      }
+    } catch (error) {
+      console.error("Failed to update task:", error);
+    }
+
+    handleAddSubTaskClose();
+  };
+
+
+  const handleSubTaskChange = <K extends keyof SubTask>(
+    index: number,
+    key: K,
+    value: SubTask[K]
+  ) => {
+    setContentList((prevList) =>
+      prevList.map((subTask, i) =>
+        i === index
+          ? {
+              ...subTask,
+              [key]: value,
+              points:
+                key === "difficulty" && typeof value === "string"
+                  ? value === "easy"
+                    ? EASY_POINTS
+                    : value === "medium"
+                    ? MEDIUM_POINTS
+                    : HARD_POINTS
+                  : key === "points"
+                  ? (value as number)
+                  : subTask.points,
+            }
+          : subTask
+      )
+    );
+
+  };
+
+  const handleDeleteSubTask = (index: number) => {
+    const updatedList = contentList.filter((_, i) => i !== index);
+    setContentList(updatedList);
+
+  };
+
+
+  const handleAddSubTaskClose = () => {
+    setOpenSubTaskModal(false);
+    setName("");
+    setContentList([]);
+    setCurrentTaskIndex(0);
+  };
+
+  return (
+    <div className="p-6 flex justify-between flex-col items-center gap-12 overflow-y-auto">
+      <div className="relative flex w-full items-center justify-center">
+        <div className="absolute flex left-10 border-2 w-20 h-20 rounded-full border justify-center items-center">
+          <h1 className="font-bold text-2xl">{points}</h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+        <div onClick={()=>router.push("/rewards")} className="absolute flex left-40 border-2 p-4 rounded-lg justify-center items-center cursor-pointer transition duration-300 hover:text-white hover:bg-black">
+          <h1 className="font-bold text-2xl">REDEEM</h1>
+        </div>
+        <div
+          onClick={handleTaskAdd}
+          className="flex flex-row bg-[#f0f39f69] w-fit p-4 rounded-lg border hover:opacity-50 transition-opacity duration-300 ease-in-out"
         >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
+          <Plus />
+          <span> Add Task </span>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        {tasks.map((task, index) => {
+          return (
+            <div key={index}>
+              <TaskCard
+                name={task.name}
+                contentList={task.contentList}
+                onDelete={() => setDeleteTaskConfimration(true)}
+                onAdd={() => {
+                  setOpenSubTaskModal(true);
+                  setCurrentTaskIndex(index);
+                  setContentList(tasks[index].contentList);
+                }}
+              />
+              {deleteTaskConfirmation && (
+                <ConfirmDialog
+                  title={"Delete Task?"}
+                  subtitle="Action is irreversible"
+                  onCancel={() => {
+                    setDeleteTaskConfimration(false);
+                  }}
+                  onConfirm={() => {
+                    handleDeleteTask(index);
+                    setDeleteTaskConfimration(false);
+                  }}
+                />
+              )}
+              {openAddSubTaskModal && (
+                <FormModal
+                  title={tasks[currentTaskIndex]?.name}
+                  onFormSubmit={handleAddSubTaskSubmit}
+                  closeFormModal={handleAddSubTaskClose}
+                >
+                  <div className="flex flex-col gap-6">
+                    {contentList.map((content, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-row justify-between"
+                      >
+                        <input
+                          type="text"
+                          name="subTask"
+                          id="subTask"
+                          placeholder="Enter Sub Task"
+                          value={contentList[index].name}
+                          onChange={(e) =>
+                            handleSubTaskChange(index, "name", e.target.value)
+                          }
+                          className="border border-gray-500 rounded-lg p-2 flex flex-grow mr-4"
+                          required
+                        />
+                        <div className="flex justify-evenly flex-row gap-6">
+                          <div>
+                            <label
+                              htmlFor="difficulty"
+                              className="font-semibold"
+                            >
+                              Difficulty:{" "}
+                            </label>
+                            <select
+                              id="difficulty"
+                              value={contentList[index].difficulty}
+                              onChange={(e) =>
+                                handleSubTaskChange(
+                                  index,
+                                  "difficulty",
+                                  e.target.value as "easy" | "medium" | "hard"
+                                )
+                              }
+                              className="border border-gray-500 rounded-lg p-2 h-10 bg-white cursor-pointer"
+                            >
+                              <option value="easy">Easy</option>
+                              <option value="medium">Medium</option>
+                              <option value="hard">Hard</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label htmlFor="points" className="font-semibold">
+                              Points:{" "}
+                            </label>
+
+                            <input
+                              type="number"
+                              name="points"
+                              id="points"
+                              placeholder="Enter Points"
+                              value={contentList[index].points ?? ""}
+                              onChange={(e) => {
+                                const newValue =
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value);
+                                handleSubTaskChange(index, "points", newValue);
+                              }}
+                              className="border border-gray-500 rounded-lg p-2 bg-white cursor-pointer w-16 h-10"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSubTask(index)}
+                            className="px-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                          >
+                            ✖
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div
+                      onClick={handleSubTaskAdd}
+                      className="border p-2 flex flex-row hover:opacity-70 transition-opacity duration-100 ease-in-out cursor-pointer"
+                    >
+                      <Plus />
+                      <p>Add Sub Task</p>
+                    </div>
+                  </div>
+                  <p className="ml-auto">
+                    Total Points:{" "}
+                    {contentList.reduce(
+                      (acc, subTask) => acc + subTask.points,
+                      0
+                    )}
+                  </p>
+                  <button
+                    type={"submit"}
+                    className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition"
+                  >
+                    Submit
+                  </button>
+                </FormModal>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      {openAddTaskModal && (
+        <FormModal
+          title="Add a Task"
+          subtitle="List the details"
+          onFormSubmit={handleAddTaskSubmit}
+          closeFormModal={handleAddTaskClose}
         >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <div className="flex flex-col gap-6">
+            <input
+              type="text"
+              name="title"
+              id="title"
+              placeholder="Enter title"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="border border-gray-500 rounded-lg p-2 "
+              required
+            />
+            {contentList.map((content, index) => (
+              <div key={index} className="flex flex-row justify-between">
+                <input
+                  type="text"
+                  name="subTask"
+                  id="subTask"
+                  placeholder="Enter Sub Task"
+                  value={contentList[index].name}
+                  onChange={(e) =>
+                    handleSubTaskChange(index, "name", e.target.value)
+                  }
+                  className="border border-gray-500 rounded-lg p-2 flex flex-grow mr-4"
+                  required
+                />
+                <div className="flex justify-evenly flex-row gap-6">
+                  <div>
+                    <label htmlFor="difficulty" className="font-semibold">
+                      Difficulty:{" "}
+                    </label>
+                    <select
+                      id="difficulty"
+                      value={contentList[index].difficulty}
+                      onChange={(e) =>
+                        handleSubTaskChange(
+                          index,
+                          "difficulty",
+                          e.target.value as "easy" | "medium" | "hard"
+                        )
+                      }
+                      className="border border-gray-500 rounded-lg p-2 h-10 bg-white cursor-pointer"
+                    >
+                      <option value="easy">Easy</option>
+                      <option value="medium">Medium</option>
+                      <option value="hard">Hard</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="points" className="font-semibold">
+                      Points:{" "}
+                    </label>
+
+                    <input
+                      type="number"
+                      name="points"
+                      id="points"
+                      placeholder="Enter Points"
+                      value={contentList[index].points ?? ""}
+                      onChange={(e) => {
+                        const newValue =
+                          e.target.value === "" ? 0 : Number(e.target.value);
+                        handleSubTaskChange(index, "points", newValue);
+                      }}
+                      className="border border-gray-500 rounded-lg p-2 bg-white cursor-pointer w-16 h-10"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteSubTask(index)}
+                    className="px-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                  >
+                    ✖
+                  </button>
+                </div>
+              </div>
+            ))}
+            <div
+              onClick={handleSubTaskAdd}
+              className="border p-2 flex flex-row hover:opacity-70 transition-opacity duration-100 ease-in-out cursor-pointer"
+            >
+              <Plus />
+              <p>Add Sub Task</p>
+            </div>
+          </div>
+          <p className="ml-auto">
+            Total Points:{" "}
+            {contentList.reduce((acc, subTask) => acc + subTask.points, 0)}
+          </p>
+          <button
+            type={"submit"}
+            className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition"
+          >
+            Submit
+          </button>
+        </FormModal>
+      )}
     </div>
   );
 }
