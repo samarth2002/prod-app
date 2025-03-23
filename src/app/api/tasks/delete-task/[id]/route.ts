@@ -3,9 +3,9 @@ import { Task } from '@/lib/server/models';
 
 export async function DELETE(
     req: NextRequest,
-    context: { params: { id: string } } 
+    {params}: { params: Promise<{ id: string }> } 
 ) {
-    const { id } = context.params;
+    const id  = (await params).id;
 
     try {
         const deleted = await Task.findByIdAndDelete(id);
