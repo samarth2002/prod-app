@@ -30,10 +30,7 @@ taskSchema.pre('save', function (next){
     next();
 })
 
-taskSchema.pre('findOneAndUpdate', function(next){
-    this._update.updatedAt = Math.floor(Date.now() / 1000)
-    next();
-})
+
 export const initializeTaskModel = (connection: any)=>{
     return connection.models.Task || connection.model('Task', taskSchema) 
 }
