@@ -5,7 +5,7 @@ interface PointsState{
 }
 
 const initialState: PointsState = {
-    pointsBalance: 150,
+    pointsBalance: 0,
 }
 
 export const pointsSlice = createSlice({
