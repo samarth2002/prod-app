@@ -151,7 +151,7 @@ export default function Home() {
   const handleSubTaskAdd = () => {
     setContentList([
       ...contentList,
-      { name: "", difficulty: "easy", points: 10 },
+      { name: "", difficulty: "easy", points: 10, createdAt: Math.floor(Date.now()/1000) },
     ]);
 
   };
