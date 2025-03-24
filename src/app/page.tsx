@@ -18,6 +18,7 @@ type SubTask = {
   name: string;
   difficulty: "easy" | "medium" | "hard";
   points: number;
+  createdAt: number;
 };
 
 type Tasks = {
@@ -68,17 +69,6 @@ export default function Home() {
       fetchTasks()
   }, []);
    
-
-  const handlePointsBalance = () => {
-    let sum = 0;
-    tasks.forEach((task, index) => {
-      sum += task?.contentList?.reduce(
-        (acc, subTask) => acc + subTask.points,
-        0
-      );
-    });
-    dispatch(setPointsBalance(sum))
-  };
 
   const handleTaskAdd = () => {
     setOpenFormModal(true);

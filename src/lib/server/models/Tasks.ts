@@ -10,6 +10,9 @@ const subTaskSchema = new mongoose.Schema({
         required: true,
     },
     points: { type: Number, required: true },
+    link: {type: String},
+    createdAt: {type: Number, default: ()=>Math.floor(Date.now()/1000), required: true},
+    updatedAt: {type: Number, default: ()=>Math.floor(Date.now()/1000)}
 });
 
 const taskSchema = new mongoose.Schema({
@@ -24,6 +27,8 @@ const taskSchema = new mongoose.Schema({
     toObject: {virtuals: true},
     versionKey: false
 })
+
+
 
 taskSchema.pre('save', function (next){
     this.updatedAt = Math.floor(Date.now()/1000)
