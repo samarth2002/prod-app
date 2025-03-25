@@ -39,9 +39,9 @@ export default function TaskCard({
 
 
   return (
-    <div className="w-96 bg-[#f0f0a3] border rounded-lg overflow-hidden shadow-lg">
-      <div className="relative flex w-full h-16 bg-[#ffff54] rounded-t-lg border-b border-gray-300 justify-between items-center px-4">
-        <h1 className="font-bold truncate max-w-[85%]">
+    <div className="w-80 sm:w-96 bg-white shadow-lg rounded-lg overflow-hidden">
+      <div className="relative flex w-full h-16 bg-[#615251] border-b border-gray-300 justify-between items-center px-4">
+        <h1 className="font-bold text-white truncate max-w-[85%]">
           {name?.length > 32 ? name.substring(0, 29) + "..." : name}
         </h1>
         <div className="flex flex-row gap-4">
@@ -65,7 +65,6 @@ export default function TaskCard({
         <p>Difficulty</p>
         <p>Points</p>
       </div>
-   
 
       <div className="p-4">
         {groupedSubTasks ? (

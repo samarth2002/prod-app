@@ -12,6 +12,7 @@ import {
 } from "@/store/pointsSlice";
 import axiosInstance from "@/lib/client/api/axiosInstance";
 import { useRouter } from "next/navigation";
+import NavBar from "@/components/NavBar";
 
 
 type SubTask = {
@@ -259,26 +260,32 @@ export default function Home() {
   };
 
   return (
-    <div className="p-6 flex justify-between flex-col items-center gap-12 overflow-y-auto">
-      <div className="relative flex w-full items-center justify-center">
-        <div className="absolute flex left-10 border-2 w-20 h-20 rounded-full border justify-center items-center">
-          <h1 className="font-bold text-2xl">{points}</h1>
+    <div>
+      <NavBar />
+      <div className="mt-20 p-6 flex justify-between flex-col items-center gap-12 overflow-y-auto bg-[#c2d19f]">
+        <div className="relative w-full flex flex-col sm:flex-row sm:items-center justify-center gap-4 sm:gap-0 px-4 py-4">
+          <div className="sm:absolute sm:left-10 flex justify-center self-center items-center border-2 w-16 h-16 sm:w-20 sm:h-20 rounded-full border-black bg-white shadow">
+            <h1 className="font-bold text-xl sm:text-2xl">{points}</h1>
+          </div>
+
+          <div
+            onClick={() => router.push("/rewards")}
+            className="sm:absolute sm:left-32 border-2 px-4 py-2 rounded-lg text-center justify-center items-center cursor-pointer hover:text-white hover:bg-black transition duration-300"
+          >
+            <h1 className="font-bold text-lg sm:text-2xl">REDEEM</h1>
+          </div>
+          <div
+            onClick={handleTaskAdd}
+            className="flex flex-row justify-center items-center bg-[#f0f39f69] w-full sm:w-fit p-3 sm:p-4 mt-4 sm:mt-0 rounded-lg border hover:opacity-50 transition-opacity duration-300 ease-in-out"
+          >
+            <Plus className="mr-2" />
+            <span className="font-semibold">Add Task</span>
+          </div>
         </div>
-        <div onClick={()=>router.push("/rewards")} className="absolute flex left-40 border-2 p-4 rounded-lg justify-center items-center cursor-pointer transition duration-300 hover:text-white hover:bg-black">
-          <h1 className="font-bold text-2xl">REDEEM</h1>
-        </div>
-        <div
-          onClick={handleTaskAdd}
-          className="flex flex-row bg-[#f0f39f69] w-fit p-4 rounded-lg border hover:opacity-50 transition-opacity duration-300 ease-in-out"
-        >
-          <Plus />
-          <span> Add Task </span>
-        </div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {tasks.map((task, index) => {
-          return (
-            <div key={index}>
+
+        <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 p-4">
+          {tasks.map((task, index) => (
+            <div key={index} className="mb-10 sm:mb-4 break-inside-avoid">
               <TaskCard
                 name={task.name}
                 contentList={task.contentList}
@@ -289,231 +296,114 @@ export default function Home() {
                   setContentList(tasks[index].contentList);
                 }}
               />
-              {deleteTaskConfirmation && (
-                <ConfirmDialog
-                  title={"Delete Task?"}
-                  subtitle="Action is irreversible"
-                  onCancel={() => {
-                    setDeleteTaskConfimration(false);
-                  }}
-                  onConfirm={() => {
-                    handleDeleteTask(index);
-                    setDeleteTaskConfimration(false);
-                  }}
-                />
-              )}
-              {openAddSubTaskModal && (
-                <FormModal
-                  title={tasks[currentTaskIndex]?.name}
-                  onFormSubmit={handleAddSubTaskSubmit}
-                  closeFormModal={handleAddSubTaskClose}
-                >
-                  <div className="flex flex-col gap-6">
-                    {contentList.map((content, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-row justify-between"
-                      >
-                        <input
-                          type="text"
-                          name="subTask"
-                          id="subTask"
-                          placeholder="Enter Sub Task"
-                          value={contentList[index].name}
-                          onChange={(e) =>
-                            handleSubTaskChange(index, "name", e.target.value)
-                          }
-                          className="border border-gray-500 rounded-lg p-2 flex flex-grow mr-4"
-                          required
-                        />
-                        <div className="flex justify-evenly flex-row gap-6">
-                          <div>
-                            <label
-                              htmlFor="difficulty"
-                              className="font-semibold"
-                            >
-                              Difficulty:{" "}
-                            </label>
-                            <select
-                              id="difficulty"
-                              value={contentList[index].difficulty}
-                              onChange={(e) =>
-                                handleSubTaskChange(
-                                  index,
-                                  "difficulty",
-                                  e.target.value as "easy" | "medium" | "hard"
-                                )
-                              }
-                              className="border border-gray-500 rounded-lg p-2 h-10 bg-white cursor-pointer"
-                            >
-                              <option value="easy">Easy</option>
-                              <option value="medium">Medium</option>
-                              <option value="hard">Hard</option>
-                            </select>
-                          </div>
-                          <div>
-                            <label htmlFor="points" className="font-semibold">
-                              Points:{" "}
-                            </label>
-
-                            <input
-                              type="number"
-                              name="points"
-                              id="points"
-                              placeholder="Enter Points"
-                              value={contentList[index].points ?? ""}
-                              onChange={(e) => {
-                                const newValue =
-                                  e.target.value === ""
-                                    ? 0
-                                    : Number(e.target.value);
-                                handleSubTaskChange(index, "points", newValue);
-                              }}
-                              className="border border-gray-500 rounded-lg p-2 bg-white cursor-pointer w-16 h-10"
-                            />
-                          </div>
-
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteSubTask(index)}
-                            className="px-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-                          >
-                            ✖
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                    <div
-                      onClick={handleSubTaskAdd}
-                      className="border p-2 flex flex-row hover:opacity-70 transition-opacity duration-100 ease-in-out cursor-pointer"
-                    >
-                      <Plus />
-                      <p>Add Sub Task</p>
-                    </div>
-                  </div>
-                  <p className="ml-auto">
-                    Total Points:{" "}
-                    {contentList.reduce(
-                      (acc, subTask) => acc + subTask.points,
-                      0
-                    )}
-                  </p>
-                  <button
-                    type={"submit"}
-                    className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition"
-                  >
-                    Submit
-                  </button>
-                </FormModal>
-              )}
             </div>
-          );
-        })}
-      </div>
-      {openAddTaskModal && (
-        <FormModal
-          title="Add a Task"
-          subtitle="List the details"
-          onFormSubmit={handleAddTaskSubmit}
-          closeFormModal={handleAddTaskClose}
-        >
-          <div className="flex flex-col gap-6">
-            <input
-              type="text"
-              name="title"
-              id="title"
-              placeholder="Enter title"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="border border-gray-500 rounded-lg p-2 "
-              required
-            />
-            {contentList.map((content, index) => (
-              <div key={index} className="flex flex-row justify-between">
-                <input
-                  type="text"
-                  name="subTask"
-                  id="subTask"
-                  placeholder="Enter Sub Task"
-                  value={contentList[index].name}
-                  onChange={(e) =>
-                    handleSubTaskChange(index, "name", e.target.value)
-                  }
-                  className="border border-gray-500 rounded-lg p-2 flex flex-grow mr-4"
-                  required
-                />
-                <div className="flex justify-evenly flex-row gap-6">
-                  <div>
-                    <label htmlFor="difficulty" className="font-semibold">
-                      Difficulty:{" "}
-                    </label>
-                    <select
-                      id="difficulty"
-                      value={contentList[index].difficulty}
-                      onChange={(e) =>
-                        handleSubTaskChange(
-                          index,
-                          "difficulty",
-                          e.target.value as "easy" | "medium" | "hard"
-                        )
-                      }
-                      className="border border-gray-500 rounded-lg p-2 h-10 bg-white cursor-pointer"
-                    >
-                      <option value="easy">Easy</option>
-                      <option value="medium">Medium</option>
-                      <option value="hard">Hard</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="points" className="font-semibold">
-                      Points:{" "}
-                    </label>
-
-                    <input
-                      type="number"
-                      name="points"
-                      id="points"
-                      placeholder="Enter Points"
-                      value={contentList[index].points ?? ""}
-                      onChange={(e) => {
-                        const newValue =
-                          e.target.value === "" ? 0 : Number(e.target.value);
-                        handleSubTaskChange(index, "points", newValue);
-                      }}
-                      className="border border-gray-500 rounded-lg p-2 bg-white cursor-pointer w-16 h-10"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => handleDeleteSubTask(index)}
-                    className="px-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
-                  >
-                    ✖
-                  </button>
-                </div>
-              </div>
-            ))}
-            <div
-              onClick={handleSubTaskAdd}
-              className="border p-2 flex flex-row hover:opacity-70 transition-opacity duration-100 ease-in-out cursor-pointer"
-            >
-              <Plus />
-              <p>Add Sub Task</p>
-            </div>
-          </div>
-          <p className="ml-auto">
-            Total Points:{" "}
-            {contentList.reduce((acc, subTask) => acc + subTask.points, 0)}
-          </p>
-          <button
-            type={"submit"}
-            className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition"
+          ))}
+        </div>
+        {openAddTaskModal && (
+          <FormModal
+            title="Add a Task"
+            subtitle="List the details"
+            onFormSubmit={handleAddTaskSubmit}
+            closeFormModal={handleAddTaskClose}
           >
-            Submit
-          </button>
-        </FormModal>
-      )}
+            <div className="flex flex-col gap-6">
+              <input
+                type="text"
+                name="title"
+                id="title"
+                placeholder="Enter title"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border border-gray-500 rounded-lg p-2 "
+                required
+              />
+              {contentList.map((content, index) => (
+                <div key={index} className="flex flex-row justify-between">
+                  <input
+                    type="text"
+                    name="subTask"
+                    id="subTask"
+                    placeholder="Enter Sub Task"
+                    value={contentList[index].name}
+                    onChange={(e) =>
+                      handleSubTaskChange(index, "name", e.target.value)
+                    }
+                    className="border border-gray-500 rounded-lg p-2 flex flex-grow mr-4"
+                    required
+                  />
+                  <div className="flex justify-evenly flex-row gap-6">
+                    <div>
+                      <label htmlFor="difficulty" className="font-semibold">
+                        Difficulty:{" "}
+                      </label>
+                      <select
+                        id="difficulty"
+                        value={contentList[index].difficulty}
+                        onChange={(e) =>
+                          handleSubTaskChange(
+                            index,
+                            "difficulty",
+                            e.target.value as "easy" | "medium" | "hard"
+                          )
+                        }
+                        className="border border-gray-500 rounded-lg p-2 h-10 bg-white cursor-pointer"
+                      >
+                        <option value="easy">Easy</option>
+                        <option value="medium">Medium</option>
+                        <option value="hard">Hard</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="points" className="font-semibold">
+                        Points:{" "}
+                      </label>
+
+                      <input
+                        type="number"
+                        name="points"
+                        id="points"
+                        placeholder="Enter Points"
+                        value={contentList[index].points ?? ""}
+                        onChange={(e) => {
+                          const newValue =
+                            e.target.value === "" ? 0 : Number(e.target.value);
+                          handleSubTaskChange(index, "points", newValue);
+                        }}
+                        className="border border-gray-500 rounded-lg p-2 bg-white cursor-pointer w-16 h-10"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSubTask(index)}
+                      className="px-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                    >
+                      ✖
+                    </button>
+                  </div>
+                </div>
+              ))}
+              <div
+                onClick={handleSubTaskAdd}
+                className="border p-2 flex flex-row hover:opacity-70 transition-opacity duration-100 ease-in-out cursor-pointer"
+              >
+                <Plus />
+                <p>Add Sub Task</p>
+              </div>
+            </div>
+            <p className="ml-auto">
+              Total Points:{" "}
+              {contentList.reduce((acc, subTask) => acc + subTask.points, 0)}
+            </p>
+            <button
+              type={"submit"}
+              className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition"
+            >
+              Submit
+            </button>
+          </FormModal>
+        )}
+      </div>
     </div>
   );
 }
