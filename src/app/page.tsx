@@ -296,6 +296,124 @@ export default function Home() {
                   setContentList(tasks[index].contentList);
                 }}
               />
+              {deleteTaskConfirmation && (
+                <ConfirmDialog
+                  title={"Delete Task?"}
+                  subtitle="Action is irreversible"
+                  onCancel={() => {
+                    setDeleteTaskConfimration(false);
+                  }}
+                  onConfirm={() => {
+                    handleDeleteTask(index);
+                    setDeleteTaskConfimration(false);
+                  }}
+                />
+              )}
+
+              {openAddSubTaskModal && (
+                <FormModal
+                  title={tasks[currentTaskIndex]?.name}
+                  onFormSubmit={handleAddSubTaskSubmit}
+                  closeFormModal={handleAddSubTaskClose}
+                >
+                  <div className="flex flex-col gap-6">
+                    {contentList.map((content, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-row justify-between"
+                      >
+                        <input
+                          type="text"
+                          name="subTask"
+                          id="subTask"
+                          placeholder="Enter Sub Task"
+                          value={contentList[index].name}
+                          onChange={(e) =>
+                            handleSubTaskChange(index, "name", e.target.value)
+                          }
+                          className="border border-gray-500 rounded-lg p-2 flex flex-grow mr-4"
+                          required
+                        />
+                        <div className="flex justify-evenly flex-row gap-6">
+                          <div>
+                            <label
+                              htmlFor="difficulty"
+                              className="font-semibold"
+                            >
+                              Difficulty:{" "}
+                            </label>
+                            <select
+                              id="difficulty"
+                              value={contentList[index].difficulty}
+                              onChange={(e) =>
+                                handleSubTaskChange(
+                                  index,
+                                  "difficulty",
+                                  e.target.value as "easy" | "medium" | "hard"
+                                )
+                              }
+                              className="border border-gray-500 rounded-lg p-2 h-10 bg-white cursor-pointer"
+                            >
+                              <option value="easy">Easy</option>
+                              <option value="medium">Medium</option>
+                              <option value="hard">Hard</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label htmlFor="points" className="font-semibold">
+                              Points:{" "}
+                            </label>
+
+                            <input
+                              type="number"
+                              name="points"
+                              id="points"
+                              placeholder="Enter Points"
+                              value={contentList[index].points ?? ""}
+                              onChange={(e) => {
+                                const newValue =
+                                  e.target.value === ""
+                                    ? 0
+                                    : Number(e.target.value);
+                                handleSubTaskChange(index, "points", newValue);
+                              }}
+                              className="border border-gray-500 rounded-lg p-2 bg-white cursor-pointer w-16 h-10"
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteSubTask(index)}
+                            className="px-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition"
+                          >
+                            ✖
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <div
+                      onClick={handleSubTaskAdd}
+                      className="border p-2 flex flex-row hover:opacity-70 transition-opacity duration-100 ease-in-out cursor-pointer"
+                    >
+                      <Plus />
+                      <p>Add Sub Task</p>
+                    </div>
+                  </div>
+                  <p className="ml-auto">
+                    Total Points:{" "}
+                    {contentList.reduce(
+                      (acc, subTask) => acc + subTask.points,
+                      0
+                    )}
+                  </p>
+                  <button
+                    type={"submit"}
+                    className="mt-4 px-4 py-2 bg-red-500 text-white font-semibold rounded-md hover:bg-red-600 transition"
+                  >
+                    Submit
+                  </button>
+                </FormModal>
+              )}
             </div>
           ))}
         </div>
