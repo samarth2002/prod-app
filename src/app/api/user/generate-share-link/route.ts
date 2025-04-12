@@ -24,7 +24,7 @@ export async function POST(req: Request) {
             linkId = currentUser.commonDashboardLink
         }
 
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+        const baseUrl = process.env.WEB_BASE_URL || 'http://localhost:3000';
         const shareLink = `${baseUrl}/shared/${linkId}`;
 
         return NextResponse.json({ success: true, shareLink });
