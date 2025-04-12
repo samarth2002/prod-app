@@ -18,7 +18,7 @@ function FormModal({
   children,
 }: Props) {
   return (
-    <div className="absolute inset-0 flex items-start pt-25 justify-center bg-black/70 z-50">
+    <div className="text-black fixed inset-0 flex items-start pt-25 justify-center bg-black/70 z-50">
       <div className="relative bg-white p-6 rounded-lg shadow-lg w-200 text-center max-h-[80vh] overflow-y-auto">
         <CircleX
           className="absolute top-5 right-5 hover:opacity-50"

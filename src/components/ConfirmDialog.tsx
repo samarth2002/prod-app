@@ -9,7 +9,7 @@ type Props = {
 
 function ConfirmDialog({ title, subtitle ,onConfirm, onCancel }: Props) {
   return (
-    <div className="absolute inset-0 flex justify-center items-center bg-black/70">
+    <div className="text-black fixed inset-0 flex justify-center items-center bg-black/70">
       <div className="bg-white p-6 rounded-lg shadow-lg w-80 text-center">
         <h1 className="text-xl font-semibold">{title}</h1>
         <p className="text-gray-600 mt-2">{subtitle}</p>

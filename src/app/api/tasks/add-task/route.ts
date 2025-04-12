@@ -1,35 +1,51 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { Task } from '@/lib/server/models';
+import { NextRequest, NextResponse } from 'next/server';
+import { Task, User } from '@/lib/server/models';
 
-export async function POST(req: NextRequest){
-    try{
+export async function POST(req: NextRequest) {
+    try {
         const body = await req.json();
+        const { userId, name, subTasks } = body;
 
-        const { name, subTasks } = body;
-
-        if(!name){
-            return NextResponse.json({success: false, error: 'Missing required fields'},{status: 400})
+        if (!userId || !name) {
+            return NextResponse.json(
+                { success: false, error: 'Missing required fields' },
+                { status: 400 }
+            );
         }
 
-        let totalPoints = 0
+        let totalPoints = 0;
 
-        if(subTasks && Array.isArray(subTasks)){
-            totalPoints = subTasks.reduce((acc, subTask) => acc+subTask?.points, 0);
-        } else if (!Array.isArray(subTasks)){
-            return NextResponse.json({ success: false, error: 'Bad subTasks format' }, { status: 500 })
+        if (subTasks && Array.isArray(subTasks)) {
+            totalPoints = subTasks.reduce((acc, subTask) => acc + subTask?.points, 0);
+        } else {
+            return NextResponse.json(
+                { success: false, error: 'Bad subTasks format' },
+                { status: 400 }
+            );
         }
 
         const task = new Task({
-            name, 
+            name,
             subTasks: subTasks || [],
-            totalPoints: totalPoints || 0
-        })
+            totalPoints: totalPoints || 0,
+        });
 
         const newTask = await task.save();
-        
-        return NextResponse.json({success: true, task: newTask},{ status: 201})
-    }catch(error){
-        console.error("Error creating task: ", error);
-        return NextResponse.json({success:false, error: "Internal server error"},{ status: 500})
+
+        await User.findByIdAndUpdate(userId, {
+            $push: { tasksId: newTask._id },
+            $inc: {
+                totalPoints: totalPoints,
+                availablePoints: totalPoints,
+            },
+        });
+
+        return NextResponse.json({ success: true, task: newTask }, { status: 201 });
+    } catch (error) {
+        console.error('Error creating task: ', error);
+        return NextResponse.json(
+            { success: false, error: 'Internal server error' },
+            { status: 500 }
+        );
     }
 }
